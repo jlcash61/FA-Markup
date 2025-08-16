@@ -16,32 +16,135 @@ let state = { tool: null, ops: {}, drawing: null, symbolScale: 2, selectedId: nu
 
 const SYMBOLS = {
   pull: "M3 5h18v14H3z M6 8h12v2H6z M10 11h4v5h-4z",
-  sd:   "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M7 12h10 M8 9.5h8 M8 14.5h8",
-  hd:   "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M12 6v12 M6 12h12 M8.2 8.2l7.6 7.6 M15.8 8.2l-7.6 7.6"
+  sd: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M7 12h10 M8 9.5h8 M8 14.5h8",
+  hd: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M12 6v12 M6 12h12 M8.2 8.2l7.6 7.6 M15.8 8.2l-7.6 7.6"
 };
 
 // === Helpers ===
 function makeId() {
   return Math.random().toString(36).substr(2, 9);
 }
+const statusTextEl = document.getElementById("statusText");
+
 function showStatus(msg) {
   if (!statusEl) return;
-  statusEl.textContent = msg;
-  statusEl.style.display = msg ? "block" : "none";
+  statusTextEl.textContent = msg;
+  statusEl.style.display = msg ? "flex" : "none";
 }
+
+// === Project Save/Load ===
+let pdfArrayBuffer = null;
+let projectName = "FA-Markup";
+
+function arrayBufferToBase64(buf) {
+  let binary = '';
+  const bytes = new Uint8Array(buf);
+  const len = bytes.byteLength;
+  for (let i = 0; i < len; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+function base64ToArrayBuffer(base64) {
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes.buffer;
+}
+
+// Save project
+document.getElementById("saveProject").addEventListener("click", () => {
+  if (!pdfArrayBuffer) {
+    alert("No PDF loaded to save!");
+    return;
+  }
+
+  // ask for name if not already set
+  const inputName = prompt("Enter project name:", projectName);
+  if (inputName && inputName.trim()) {
+    projectName = inputName.trim();
+  }
+
+  showStatus("Saving project…");
+
+  const data = {
+    projectName,
+    cam,
+    currentPage,
+    ops: state.ops,
+    symbolScale: state.symbolScale,
+    pdf: arrayBufferToBase64(pdfArrayBuffer)
+  };
+
+  const blob = new Blob([JSON.stringify(data)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${projectName}.famarkup`;  // ✅ custom extension, no .json
+  a.click();
+
+  showStatus(""); // hide spinner
+});
+
+
+// Load project
+document.getElementById("loadProject").addEventListener("click", () => {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".famarkup";
+
+  input.onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    showStatus("Loading project…");
+
+    const text = await file.text();
+    const data = JSON.parse(text);
+
+    projectName = data.projectName || "FA-Markup";
+    Object.assign(cam, data.cam || {});
+    state.ops = data.ops || {};
+    state.symbolScale = data.symbolScale || 2;
+    currentPage = data.currentPage || 1;
+
+    if (data.pdf) {
+      // ✅ Safe permanent copy for saving
+      pdfArrayBuffer = base64ToArrayBuffer(data.pdf).slice(0);
+
+      // ✅ PDF.js gets its own clone
+      pdfDoc = await pdfjsLib.getDocument({ data: pdfArrayBuffer.slice(0) }).promise;
+
+      pageCount = pdfDoc.numPages;
+      await showPage();
+    }
+
+    showStatus("");
+  };
+  input.click();
+});
+
 
 // === Load PDF ===
 fileInput.addEventListener("change", async e => {
   const file = e.target.files[0];
   if (!file) return;
   showStatus("Loading PDF…");
+
+  // read into ArrayBuffer
   const buf = await file.arrayBuffer();
-  pdfDoc = await pdfjsLib.getDocument({ data: buf }).promise;
+
+  // ✅ Safe copy for save/load
+  pdfArrayBuffer = buf.slice(0);
+
+  // ✅ PDF.js gets its own clone
+  pdfDoc = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+
   pageCount = pdfDoc.numPages;
   currentPage = 1;
   await showPage();
   showStatus("");
 });
+
+
 
 async function showPage() {
   const page = await pdfDoc.getPage(currentPage);
@@ -59,6 +162,9 @@ async function showPage() {
 
   redraw();
   document.getElementById("pageInfo").textContent = `Page ${currentPage}/${pageCount}`;
+
+  showStatus("");
+
 }
 
 // === Symbol scale control ===
@@ -105,7 +211,7 @@ function drawOp(op, preview = false) {
       const boxSize = 30 * (op.scale || 1);
       ovCtx.strokeStyle = "red";
       ovCtx.lineWidth = 1;
-      ovCtx.strokeRect(-boxSize/2, -boxSize/2, boxSize, boxSize);
+      ovCtx.strokeRect(-boxSize / 2, -boxSize / 2, boxSize, boxSize);
     }
   }
 
@@ -138,7 +244,7 @@ function drawOp(op, preview = false) {
     if (isSelected) {
       const w = ovCtx.measureText(op.content).width;
       ovCtx.strokeStyle = "red";
-      ovCtx.strokeRect(op.x, op.y - (op.size||16), w, (op.size||16));
+      ovCtx.strokeRect(op.x, op.y - (op.size || 16), w, (op.size || 16));
     }
   }
 
@@ -181,10 +287,17 @@ overlay.addEventListener("mousedown", e => {
   const ops = state.ops[currentPage] || [];
 
   if (!state.tool) {
-    const hit = ops.find(op =>
-      (op.type === "symbol" && Math.abs(op.x - x) < 20 && Math.abs(op.y - y) < 20) ||
-      (op.type === "text" && x >= op.x && x <= op.x + 100 && y <= op.y && y >= op.y - 20)
-    );
+    const hit = ops.find(op => {
+      if (op.type === "symbol") {
+        return Math.abs(op.x - x) < 20 && Math.abs(op.y - y) < 20;
+      }
+      if (op.type === "text") {
+        const w = ovCtx.measureText(op.content).width;
+        const h = op.size || 16;
+        return (x >= op.x && x <= op.x + w && y <= op.y && y >= op.y - h);
+      }
+      return false;
+    });
     if (hit) {
       state.selectedId = hit.id;
       movingOp = hit;
@@ -277,6 +390,44 @@ document.getElementById("clearPage").addEventListener("click", () => {
   redraw();
 });
 
+// === Double-click to re-edit text (prompt based) ===
+overlay.addEventListener("dblclick", e => {
+  const rect = overlay.getBoundingClientRect();
+  const x = (e.clientX - rect.left - cam.offsetX) / cam.zoom;
+  const y = (e.clientY - rect.top - cam.offsetY) / cam.zoom;
+  const ops = state.ops[currentPage] || [];
+
+  const hit = ops.find(op =>
+    op.type === "text" &&
+    x >= op.x - 2 &&
+    x <= op.x + ovCtx.measureText(op.content).width + 2 &&
+    y <= op.y &&
+    y >= op.y - (op.size || 16)
+  );
+
+  if (hit) {
+    const newText = prompt("Edit text:", hit.content);
+    if (newText !== null && newText.trim() !== "") {
+      hit.content = newText.trim();
+      redraw();
+    }
+  }
+});
+
+
+// === Delete selected op ===
+document.getElementById("delete").addEventListener("click", () => {
+  if (!state.selectedId) return;
+  const ops = state.ops[currentPage] || [];
+  const idx = ops.findIndex(op => op.id === state.selectedId);
+  if (idx >= 0) {
+    ops.splice(idx, 1);
+    state.selectedId = null;
+    redraw();
+  }
+});
+
+
 // === Zoom + Nav ===
 function zoomAt(factor, cx, cy) {
   const prevZoom = cam.zoom;
@@ -286,7 +437,7 @@ function zoomAt(factor, cx, cy) {
   redraw();
 }
 document.getElementById("zoomIn").addEventListener("click", () => zoomAt(1.2, overlay.width / 2, overlay.height / 2));
-document.getElementById("zoomOut").addEventListener("click", () => zoomAt(1/1.2, overlay.width / 2, overlay.height / 2));
+document.getElementById("zoomOut").addEventListener("click", () => zoomAt(1 / 1.2, overlay.width / 2, overlay.height / 2));
 document.getElementById("resetView").addEventListener("click", () => { cam.zoom = 1; cam.offsetX = 0; cam.offsetY = 0; redraw(); });
 document.getElementById("prevPage").addEventListener("click", async () => { if (currentPage > 1) { currentPage--; await showPage(); } });
 document.getElementById("nextPage").addEventListener("click", async () => { if (currentPage < pageCount) { currentPage++; await showPage(); } });
@@ -294,23 +445,42 @@ document.getElementById("nextPage").addEventListener("click", async () => { if (
 // === Export ===
 document.getElementById("exportPdf").addEventListener("click", async () => {
   showStatus("Exporting PDF…");
+
   const pdf = await PDFLib.PDFDocument.create();
+
+  // open a fresh instance of pdf.js (so we don't fight with viewer)
+  const tempDoc = await pdfjsLib.getDocument({ data: pdfArrayBuffer.slice(0) }).promise;
+
   for (let p = 1; p <= pageCount; p++) {
+    const page = await tempDoc.getPage(p);
+    const viewport = page.getViewport({ scale: 2 });
+
     const c = document.createElement("canvas");
-    c.width = pdfCanvas.width; c.height = pdfCanvas.height;
+    c.width = viewport.width;
+    c.height = viewport.height;
+
+    await page.render({ canvasContext: c.getContext("2d"), viewport }).promise;
+
+    // draw our markup
     const ctx = c.getContext("2d");
-    ctx.drawImage(pageImage, 0, 0);
     (state.ops[p] || []).forEach(op => drawOpToCtx(ctx, op));
+
+    // embed page image into export PDF
     const img = await pdf.embedPng(c.toDataURL("image/png"));
-    const page = pdf.addPage([c.width, c.height]);
-    page.drawImage(img, { x: 0, y: 0, width: c.width, height: c.height });
+    const pdfPage = pdf.addPage([c.width, c.height]);
+    pdfPage.drawImage(img, { x: 0, y: 0, width: c.width, height: c.height });
   }
+
   const bytes = await pdf.save();
   const blob = new Blob([bytes], { type: "application/pdf" });
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob); a.download = "FA-Markup.pdf"; a.click();
+  a.href = URL.createObjectURL(blob);
+  a.download = `${projectName}.pdf`;
+  a.click();
+
   showStatus("");
 });
+
 
 function drawOpToCtx(ctx, op) {
   ctx.save();
@@ -339,11 +509,11 @@ function drawOpToCtx(ctx, op) {
     ctx.beginPath();
     ctx.moveTo(op.pts[0][0], op.pts[0][1]);
     for (let i = 1; i < op.pts.length; i++) {
-      const [x0, y0] = op.pts[i-1], [x1, y1] = op.pts[i];
+      const [x0, y0] = op.pts[i - 1], [x1, y1] = op.pts[i];
       const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy) || 1;
-      const nx = -dy/len, ny = dx/len;
-      const mx = (x0+x1)/2, my = (y0+y1)/2;
-      ctx.quadraticCurveTo(mx+nx*4, my+ny*4, x1, y1);
+      const nx = -dy / len, ny = dx / len;
+      const mx = (x0 + x1) / 2, my = (y0 + y1) / 2;
+      ctx.quadraticCurveTo(mx + nx * 4, my + ny * 4, x1, y1);
     }
     ctx.stroke();
   }
@@ -353,4 +523,9 @@ function drawOpToCtx(ctx, op) {
   }
 
   ctx.restore();
+}
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("service-worker.js")
+    .then(() => console.log("Service Worker registered"))
+    .catch(err => console.error("SW registration failed:", err));
 }

@@ -4,40 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <title>FA Markup Tool</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#333333">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
-        header {
-            background: #333;
-            color: #fff;
-            padding: 8px;
-            display: flex;
-            gap: 8px;
-        }
 
-        #canvasWrap {
-            flex: 1;
-            position: relative;
-            background: #666;
-            overflow: hidden;
-        }
-
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-
-        button.active {
-            background: #0a0;
-        }
-    </style>
 </head>
 
 <body>
@@ -58,11 +31,11 @@
         <button class="tool" data-tool="hd">Heat</button>
         <button class="tool" data-tool="text">Text</button>
 
-
         <!-- New drawing tools -->
         <button class="tool" data-tool="line">Line</button>
         <button class="tool" data-tool="arrow">Arrow</button>
         <button class="tool" data-tool="cloud">Cloud</button>
+        <button id="delete">Delete</button>
 
         <!-- Symbol size control -->
         <label>Size
@@ -72,14 +45,21 @@
         <button id="undo">Undo</button>
         <button id="clearPage">Clear Page</button>
 
+        <!-- Project management -->
+        <button id="saveProject">Save Project</button>
+        <button id="loadProject">Load Project</button>
 
         <!-- Export -->
         <button id="exportPdf">Export PDF</button>
     </header>
 
-    <div id="status" style="display:none;position:absolute;top:10px;left:10px;
- background:#000;color:#fff;padding:4px 8px;border-radius:4px;z-index:999">
+
+    <div id="status">
+        <div class="spinner"></div>
+        <span id="statusText"></span>
     </div>
+
+
 
 
     <div id="canvasWrap">
