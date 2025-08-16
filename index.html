@@ -1,39 +1,95 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-  <meta charset="UTF-8">
-  <title>FA Markup Tool</title>
-  <style>
-    body { margin:0; font-family:sans-serif; display:flex; flex-direction:column; height:100vh; }
-    header { background:#333; color:#fff; padding:8px; display:flex; gap:8px; }
-    #canvasWrap { flex:1; position:relative; background:#666; overflow:hidden; }
-    canvas { position:absolute; top:0; left:0; }
-    button.active { background:#0a0; }
-  </style>
+    <meta charset="UTF-8">
+    <title>FA Markup Tool</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        header {
+            background: #333;
+            color: #fff;
+            padding: 8px;
+            display: flex;
+            gap: 8px;
+        }
+
+        #canvasWrap {
+            flex: 1;
+            position: relative;
+            background: #666;
+            overflow: hidden;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        button.active {
+            background: #0a0;
+        }
+    </style>
 </head>
+
 <body>
-  <header>
-    <input type="file" id="fileInput">
-    <button id="prevPage">Prev</button>
-    <span id="pageInfo"></span>
-    <button id="nextPage">Next</button>
-    <button id="zoomIn">Zoom In</button>
-    <button id="zoomOut">Zoom Out</button>
-    <button id="resetView">Reset</button>
-    <button class="tool" data-tool="pull">Pull</button>
-    <button class="tool" data-tool="sd">Smoke</button>
-    <button class="tool" data-tool="hd">Heat</button>
-    <label>Size <input type="range" id="symSize" min="0.5" max="2" step="0.1" value="1"></label>
+    <header>
+        <input type="file" id="fileInput">
 
-    <button id="exportPdf">Export</button>
-  </header>
-  <div id="canvasWrap">
-    <canvas id="pdfCanvas"></canvas>
-    <canvas id="overlay"></canvas>
-  </div>
+        <button id="prevPage">Prev</button>
+        <span id="pageInfo"></span>
+        <button id="nextPage">Next</button>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-  <script type="module" src="app.js"></script>
+        <button id="zoomIn">Zoom In</button>
+        <button id="zoomOut">Zoom Out</button>
+        <button id="resetView">Reset</button>
+
+        <!-- Symbol tools -->
+        <button class="tool" data-tool="pull">Pull</button>
+        <button class="tool" data-tool="sd">Smoke</button>
+        <button class="tool" data-tool="hd">Heat</button>
+        <button class="tool" data-tool="text">Text</button>
+
+
+        <!-- New drawing tools -->
+        <button class="tool" data-tool="line">Line</button>
+        <button class="tool" data-tool="arrow">Arrow</button>
+        <button class="tool" data-tool="cloud">Cloud</button>
+
+        <!-- Symbol size control -->
+        <label>Size
+            <input type="range" id="symSize" min="0.5" max="3" step="0.1" value="2">
+        </label>
+
+        <button id="undo">Undo</button>
+        <button id="clearPage">Clear Page</button>
+
+
+        <!-- Export -->
+        <button id="exportPdf">Export PDF</button>
+    </header>
+
+    <div id="status" style="display:none;position:absolute;top:10px;left:10px;
+ background:#000;color:#fff;padding:4px 8px;border-radius:4px;z-index:999">
+    </div>
+
+
+    <div id="canvasWrap">
+        <canvas id="pdfCanvas"></canvas>
+        <canvas id="overlay"></canvas>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+    <script type="module" src="app.js"></script>
 </body>
+
 </html>
