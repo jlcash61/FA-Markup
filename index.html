@@ -1,82 +1,39 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>FA Markup</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="stylesheet" href="./styles.css" />
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='8' fill='%23dc2626'/%3E%3C/svg%3E">
+  <meta charset="UTF-8">
+  <title>FA Markup Tool</title>
+  <style>
+    body { margin:0; font-family:sans-serif; display:flex; flex-direction:column; height:100vh; }
+    header { background:#333; color:#fff; padding:8px; display:flex; gap:8px; }
+    #canvasWrap { flex:1; position:relative; background:#666; overflow:hidden; }
+    canvas { position:absolute; top:0; left:0; }
+    button.active { background:#0a0; }
+  </style>
 </head>
 <body>
-  <div id="status">Ready. Pick a PDF to render.</div>
+  <header>
+    <input type="file" id="fileInput">
+    <button id="prevPage">Prev</button>
+    <span id="pageInfo"></span>
+    <button id="nextPage">Next</button>
+    <button id="zoomIn">Zoom In</button>
+    <button id="zoomOut">Zoom Out</button>
+    <button id="resetView">Reset</button>
+    <button class="tool" data-tool="pull">Pull</button>
+    <button class="tool" data-tool="sd">Smoke</button>
+    <button class="tool" data-tool="hd">Heat</button>
+    <label>Size <input type="range" id="symSize" min="0.5" max="2" step="0.1" value="1"></label>
 
-  <div class="layout">
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="brand"><span class="dot"></span><h1>FA Markup</h1></div>
-
-      <section class="block">
-        <label class="label">PDF</label>
-        <input id="fileInput" type="file" accept="application/pdf" class="input-file"/>
-        <div class="row">
-          <button id="prevPage" class="btn">‹</button>
-          <span id="pageInfo" class="muted">–</span>
-          <button id="nextPage" class="btn">›</button>
-        </div>
-        <div class="row">
-          <button id="fitW" class="btn grow">Fit Width</button>
-          <button id="fitP" class="btn grow">Fit Page</button>
-        </div>
-      </section>
-
-      <section class="block">
-        <label class="label">Tools</label>
-        <div class="tool-grid">
-          <button data-tool="pull" class="tool btn">PULL</button>
-          <button data-tool="sd"   class="tool btn">SD</button>
-          <button data-tool="hd"   class="tool btn">HD</button>
-          <button data-tool="mm"   class="tool btn">MM</button>
-          <button data-tool="arrow" class="tool btn">→</button>
-          <button data-tool="line"  class="tool btn">—</button>
-          <button data-tool="cloud" class="tool btn">☁</button>
-          <button data-tool="text"  class="tool btn span-3">Text</button>
-        </div>
-
-        <div class="grid-2 gap">
-          <label class="label span-2">Symbol Scale</label>
-          <input id="scale" type="range" min="0.5" max="2" step="0.25" value="1" class="range span-2"/>
-          <button id="rotL" class="btn">Rotate ⟲</button>
-          <button id="rotR" class="btn">Rotate ⟳</button>
-        </div>
-      </section>
-
-      <section class="block top-border">
-        <button id="undo" class="btn wide">Undo</button>
-        <button id="clearPg" class="btn wide">Clear Page</button>
-        <button id="exportPdf" class="btn wide primary">Flatten & Download</button>
-      </section>
-    </aside>
-
-    <!-- Main -->
-    <main class="main">
-      <div id="canvasWrap" class="canvas-wrap">
-        <canvas id="pdfCanvas"></canvas>
-        <canvas id="overlay"></canvas>
-      </div>
-    </main>
+    <button id="exportPdf">Export</button>
+  </header>
+  <div id="canvasWrap">
+    <canvas id="pdfCanvas"></canvas>
+    <canvas id="overlay"></canvas>
   </div>
 
-  <!-- pdf.js (UMD build with global pdfjsLib) -->
-  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build/pdf.min.js"></script>
-  <script>
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      "https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build/pdf.worker.min.js";
-  </script>
-
-  <!-- pdf-lib -->
-  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-
-  <!-- App -->
-  <script src="./app.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 </html>
