@@ -1,54 +1,64 @@
-// ===== Fire Alarm Markup Tool =====
+// ====== FA Markup App with Zoom & Pan ======
 
-// DOM helpers
-const $ = (sel) => document.querySelector(sel);
+// Helpers
+const $  = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
-const setStatus = (msg) => { $("#status").textContent = msg; console.log(msg); };
+const setStatus = (msg) => {
+  const el = $("#status");
+  if (el) el.innerHTML = msg;
+  console.log("[FA]", msg.replace(/<[^>]+>/g, ""));
+};
 
-// State
+/* -------------------- State -------------------- */
 const state = {
   pdf: null,
   pdfBytes: null,
   page: 1,
-  scale: 1,
+  baseScale: null,
+  viewScale: 1,    // user zoom level
+  panX: 0,
+  panY: 0,
+  rotation: 0,
   tool: null,
   symScale: 1,
-  rotation: 0,
-  overlayOps: {},  // { pageNum: [ops] }
-  drawing: null
+  overlayOps: {},   // { pageNumber: [ ops... ] }
+  drawing: null,
 };
 
-// Fire alarm symbol paths (24x24 viewBox)
 const SYMBOLS = {
-  pull: "M3 5h18v14H3z M6 8h12v2H6z M10 11h4v5h-4z",
-  sd:   "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M7 12h10 M8 9.5h8 M8 14.5h8",
-  hd:   "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M12 6v12 M6 12h12 M8.2 8.2l7.6 7.6 M15.8 8.2l-7.6 7.6",
-  mm:   "M4 6h16v12H4z M7 9h10v6H7z M9 10.5h6M9 13.5h6"
+  pull: { size: 24, path: "M3 5h18v14H3z M6 8h12v2H6z M10 11h4v5h-4z" },
+  sd:   { size: 24, path: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M7 12h10 M8 9.5h8 M8 14.5h8" },
+  hd:   { size: 24, path: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M12 6v12 M6 12h12 M8.2 8.2l7.6 7.6 M15.8 8.2l-7.6 7.6" },
+  mm:   { size: 24, path: "M4 6h16v12H4z M7 9h10v6H7z M9 10.5h6M9 13.5h6" },
 };
 
-let viewport = null;
-
-// PDF + overlay canvases
-const pdfCanvas = $("#pdfCanvas");
-const overlay = $("#overlay");
-const pdfCtx = pdfCanvas.getContext("2d");
-const ovCtx = overlay.getContext("2d");
-
-// Page ops array
 function pageOps(p) {
   if (!state.overlayOps[p]) state.overlayOps[p] = [];
   return state.overlayOps[p];
 }
 
-// Coordinate transforms
+/* -------------------- Canvas setup -------------------- */
+const pdfCanvas = $("#pdfCanvas");
+const overlay = $("#overlay");
+const pdfCtx = pdfCanvas.getContext("2d");
+const ovCtx = overlay.getContext("2d");
+let viewport = null;
+
+// Convert client → PDF coords
 function clientToPdf(x, y) {
-  return [x / state.scale, viewport.height - (y / state.scale)];
-}
-function pdfToClient(px, py) {
-  return [px * state.scale, (viewport.height - py) * state.scale];
+  const px = (x - state.panX) / (state.baseScale * state.viewScale);
+  const py = viewport.height - (y - state.panY) / (state.baseScale * state.viewScale);
+  return [px, py];
 }
 
-// ===== PDF loading =====
+// Convert PDF → client coords
+function pdfToClient(px, py) {
+  const x = px * state.baseScale * state.viewScale + state.panX;
+  const y = (viewport.height - py) * state.baseScale * state.viewScale + state.panY;
+  return [x, y];
+}
+
+/* -------------------- UI wiring -------------------- */
 $("#fileInput").addEventListener("change", async (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
@@ -56,271 +66,302 @@ $("#fileInput").addEventListener("change", async (e) => {
   state.pdfBytes = buf;
   state.pdf = await pdfjsLib.getDocument({ data: buf }).promise;
   state.page = 1;
-  state.overlayOps = {};
-  await renderFitWidth();
+  state.viewScale = 1;
+  state.panX = 0;
+  state.panY = 0;
+  state.baseScale = null;
+  await renderPage();
 });
 
-// ===== Tool selection =====
+$("#prevPage").addEventListener("click", async () => {
+  if (!state.pdf) return;
+  state.page = Math.max(1, state.page - 1);
+  await renderPage();
+});
+$("#nextPage").addEventListener("click", async () => {
+  if (!state.pdf) return;
+  state.page = Math.min(state.pdf.numPages, state.page + 1);
+  await renderPage();
+});
+
+$("#fitW").addEventListener("click", () => { state.viewScale=1; state.panX=0; state.panY=0; fitWidth(); });
+$("#fitP").addEventListener("click", () => { state.viewScale=1; state.panX=0; state.panY=0; fitPage(); });
+
+$("#scale").addEventListener("input", (e) => state.symScale = parseFloat(e.target.value));
+$("#rotL").addEventListener("click", () => rotate(-90));
+$("#rotR").addEventListener("click", () => rotate(90));
+
 $$(".tool").forEach(btn => btn.addEventListener("click", () => {
   state.tool = btn.dataset.tool;
   $$(".tool").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
 }));
-$("#scale").addEventListener("input", (e) => state.symScale = parseFloat(e.target.value));
-$("#rotL").addEventListener("click", () => rotate(-90));
-$("#rotR").addEventListener("click", () => rotate(90));
 
+$("#undo").addEventListener("click", () => {
+  pageOps(state.page).pop();
+  redrawOverlay();
+});
+$("#clearPg").addEventListener("click", () => {
+  state.overlayOps[state.page] = [];
+  redrawOverlay();
+});
+$("#exportPdf").addEventListener("click", exportFlattened);
+
+// Hotkeys
+window.addEventListener("keydown", (e) => {
+  if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+  const k = e.key.toLowerCase();
+  if (k === "1") selectTool("pull");
+  else if (k === "2") selectTool("sd");
+  else if (k === "3") selectTool("hd");
+  else if (k === "4") selectTool("mm");
+  else if (k === "a") selectTool("arrow");
+  else if (k === "l") selectTool("line");
+  else if (k === "c") selectTool("cloud");
+  else if (k === "t") selectTool("tag");
+  else if (k === "r") rotate(90);
+  else if (k === "+") bumpScale(0.25);
+  else if (k === "-") bumpScale(-0.25);
+});
+
+function selectTool(t) {
+  const target = document.querySelector(`[data-tool="${t}"]`);
+  if (target) target.click();
+}
 function rotate(deg) {
   state.rotation = ((state.rotation + deg) % 360 + 360) % 360;
 }
+function bumpScale(d) {
+  state.symScale = Math.max(0.5, Math.min(2, state.symScale + d));
+  $("#scale").value = String(state.symScale);
+}
 
-// ===== Navigation =====
-$("#prevPage").addEventListener("click", async () => {
-  if (!state.pdf) return;
-  state.page = Math.max(1, state.page - 1);
-  await renderFitWidth();
-});
-$("#nextPage").addEventListener("click", async () => {
-  if (!state.pdf) return;
-  state.page = Math.min(state.pdf.numPages, state.page + 1);
-  await renderFitWidth();
-});
-$("#fitW").addEventListener("click", renderFitWidth);
-$("#fitP").addEventListener("click", renderFitPage);
+/* -------------------- Zoom & Pan -------------------- */
+function zoomAt(factor, cx, cy) {
+  cx = cx ?? pdfCanvas.width/2;
+  cy = cy ?? pdfCanvas.height/2;
+  const [px, py] = clientToPdf(cx, cy);
+  state.viewScale *= factor;
+  const [nx, ny] = pdfToClient(px, py);
+  state.panX += cx - nx;
+  state.panY += cy - ny;
+  renderPage();
+}
 
-// ===== Undo/Clear =====
-$("#undo").addEventListener("click", () => { pageOps(state.page).pop(); redrawOverlay(); });
-$("#clearPg").addEventListener("click", () => { state.overlayOps[state.page] = []; redrawOverlay(); });
+$("#zoomIn")?.addEventListener("click", () => zoomAt(1.25));
+$("#zoomOut")?.addEventListener("click", () => zoomAt(0.8));
 
-// ===== Overlay drawing =====
+let panning = false, lastX=0,lastY=0, spaceDown=false;
+window.addEventListener("keydown", e => { if (e.code==="Space") spaceDown=true; });
+window.addEventListener("keyup", e => { if (e.code==="Space") spaceDown=false; });
+
 overlay.addEventListener("mousedown", (e) => {
-  if (!state.tool) return;
-  const rect = overlay.getBoundingClientRect();
-  const x = e.clientX - rect.left, y = e.clientY - rect.top;
+  if (e.button===1 || spaceDown) {
+    panning=true;
+    lastX=e.clientX; lastY=e.clientY;
+    e.preventDefault();
+  }
+});
+window.addEventListener("mousemove", (e) => {
+  if (panning) {
+    const dx = e.clientX-lastX;
+    const dy = e.clientY-lastY;
+    lastX=e.clientX; lastY=e.clientY;
+    state.panX += dx;
+    state.panY += dy;
+    renderPage();
+  }
+});
+window.addEventListener("mouseup", ()=>panning=false);
 
-  if (["pull","sd","hd","mm"].includes(state.tool)) {
-    placeSymbol(x, y);
-    return;
+/* -------------------- Render PDF page -------------------- */
+let isRendering = false, needsRender = false;
+
+async function renderPage() {
+  if (!state.pdf) return;
+  if (isRendering) { needsRender = true; return; }
+  isRendering = true;
+
+  const page = await state.pdf.getPage(state.page);
+  viewport = page.getViewport({ scale: 1 });
+
+  if (!state.baseScale) {
+    const wrap = $("#canvasWrap");
+    const targetW = Math.min(wrap?.clientWidth || 1000, 1200);
+    state.baseScale = targetW / viewport.width;
   }
-  if (state.tool === "text") {
-    const text = prompt("Enter label text:");
-    if (text) placeText(x, y, text);
-    return;
+
+  const scale = state.baseScale * state.viewScale;
+
+  pdfCanvas.width  = viewport.width  * scale;
+  pdfCanvas.height = viewport.height * scale;
+  overlay.width    = pdfCanvas.width;
+  overlay.height   = pdfCanvas.height;
+
+  pdfCtx.setTransform(1,0,0,1,0,0);
+  pdfCtx.clearRect(0,0,pdfCanvas.width,pdfCanvas.height);
+
+  pdfCtx.save();
+  pdfCtx.translate(state.panX, state.panY);
+  pdfCtx.scale(scale, scale);
+  await page.render({ canvasContext: pdfCtx, viewport }).promise;
+  pdfCtx.restore();
+
+  $("#pageInfo").textContent = `Page ${state.page} / ${state.pdf.numPages}`;
+  redrawOverlay();
+
+  isRendering = false;
+  if (needsRender) { needsRender=false; renderPage(); }
+}
+
+function fitWidth(){
+  if (!state.pdf) return;
+  state.baseScale = ($("#canvasWrap").clientWidth || 1000) / viewport.width;
+  state.viewScale=1; state.panX=0; state.panY=0;
+  renderPage();
+}
+function fitPage(){
+  if (!state.pdf) return;
+  const wrap = $("#canvasWrap");
+  const maxW = wrap?.clientWidth || 1000;
+  const maxH = (window.innerHeight - 32) * 0.9;
+  const sW = maxW / viewport.width;
+  const sH = maxH / viewport.height;
+  state.baseScale = Math.min(sW,sH);
+  state.viewScale=1; state.panX=0; state.panY=0;
+  renderPage();
+}
+
+/* -------------------- Overlay interaction -------------------- */
+overlay.addEventListener("mousedown", (e) => {
+  if (!state.tool || panning) return;
+  const rect = overlay.getBoundingClientRect();
+  const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+  const [px, py] = clientToPdf(cx, cy); // normalize to PDF coords
+
+  if (["pull","sd","hd","mm","tag"].includes(state.tool)) { 
+    placeOne(cx, cy); 
+    return; 
   }
+
   if (state.tool === "arrow" || state.tool === "line") {
-    state.drawing = { type: state.tool, from: [x,y], to: [x,y] };
+    state.drawing = { type: state.tool, from:[px,py], to:[px,py] };
+    redrawOverlay();
   }
+
   if (state.tool === "cloud") {
-    state.drawing = { type: "cloud", pts: [[x,y]] };
+    state.drawing = { type: "cloud", pts:[[px,py]] };
   }
 });
 
 overlay.addEventListener("mousemove", (e) => {
   if (!state.drawing) return;
   const rect = overlay.getBoundingClientRect();
-  const x = e.clientX - rect.left, y = e.clientY - rect.top;
+  const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+  const [px, py] = clientToPdf(cx, cy);
 
-  if (state.drawing.type === "arrow" || state.drawing.type === "line") {
-    state.drawing.to = [x,y];
-  }
-  if (state.drawing.type === "cloud") {
-    state.drawing.pts.push([x,y]);
-  }
+  if (state.drawing.type==="arrow"||state.drawing.type==="line") 
+    state.drawing.to=[px,py];
+  else if (state.drawing.type==="cloud") 
+    state.drawing.pts.push([px,py]);
+
   redrawOverlay();
 });
 
 overlay.addEventListener("mouseup", () => {
   if (!state.drawing) return;
   pageOps(state.page).push({ page: state.page, ...state.drawing });
-  state.drawing = null;
-  redrawOverlay();
+  state.drawing=null; redrawOverlay();
 });
 
-// ===== Place ops =====
-function placeSymbol(cx, cy) {
-  const at = clientToPdf(cx, cy);
-  pageOps(state.page).push({
+
+/* -------------------- Place symbol -------------------- */
+function placeOne(cx, cy) {
+  const [px, py] = clientToPdf(cx, cy);
+  const op = {
+    page: state.page,
     type: "symbol",
     kind: state.tool,
-    at,
+    at: [px, py],
     scale: state.symScale,
-    rot: state.rotation
-  });
-  redrawOverlay();
-}
-function placeText(cx, cy, text) {
-  const at = clientToPdf(cx, cy);
-  pageOps(state.page).push({
-    type: "text",
-    text,
-    at
-  });
+    rot: state.rotation,
+  };
+  pageOps(state.page).push(op);
   redrawOverlay();
 }
 
-// ===== Render PDF page =====
-async function renderFitWidth() {
-  if (!state.pdf) return;
-  const page = await state.pdf.getPage(state.page);
-  viewport = page.getViewport({ scale: 1 });
-  const targetW = Math.min($("#canvasWrap").clientWidth || 1000, 1200);
-  state.scale = targetW / viewport.width;
-  await drawPage(page, state.scale);
-}
-async function renderFitPage() {
-  if (!state.pdf) return;
-  const page = await state.pdf.getPage(state.page);
-  viewport = page.getViewport({ scale: 1 });
-  const maxW = Math.min($("#canvasWrap").clientWidth || 1000, 1200);
-  const maxH = (window.innerHeight - 32) * 0.9;
-  const sW = maxW / viewport.width;
-  const sH = maxH / viewport.height;
-  state.scale = Math.min(sW, sH);
-  await drawPage(page, state.scale);
-}
-async function drawPage(page, scale) {
-  pdfCanvas.width = Math.floor(viewport.width * scale);
-  pdfCanvas.height = Math.floor(viewport.height * scale);
-  overlay.width = pdfCanvas.width;
-  overlay.height = pdfCanvas.height;
-  await page.render({ canvasContext: pdfCtx, viewport: page.getViewport({ scale }) }).promise;
-  $("#pageInfo").textContent = `Page ${state.page} / ${state.pdf.numPages}`;
-  redrawOverlay();
-}
-
-// ===== Overlay redraw =====
+/* -------------------- Overlay redraw -------------------- */
 function redrawOverlay() {
+  ovCtx.setTransform(1,0,0,1,0,0); // reset transform
   ovCtx.clearRect(0,0,overlay.width,overlay.height);
+
+  // Apply same transform as PDF canvas
+  const scale = state.baseScale * state.viewScale;
+  ovCtx.save();
+  ovCtx.translate(state.panX, state.panY);
+  ovCtx.scale(scale, scale);
+
   const ops = pageOps(state.page);
   for (const op of ops) drawOp(op);
   if (state.drawing) drawOp(state.drawing, true);
-}
-function drawOp(op, preview=false) {
-  ovCtx.save();
-  ovCtx.lineWidth = 2;
-  ovCtx.strokeStyle = preview ? "#999" : "#111";
-  ovCtx.fillStyle = "#111";
 
-  if (op.type === "symbol") {
-    const [cx, cy] = pdfToClient(op.at[0], op.at[1]);
-    ovCtx.translate(cx, cy);
-    ovCtx.rotate((op.rot || 0) * Math.PI/180);
-    const path = new Path2D(SYMBOLS[op.kind]);
-    const scale = (op.scale || 1) * (24/24);
-    ovCtx.scale(scale, scale);
-    ovCtx.stroke(path);
-  }
-  else if (op.type === "text") {
-    const [cx, cy] = pdfToClient(op.at[0], op.at[1]);
-    ovCtx.font = "14px sans-serif";
-    ovCtx.fillText(op.text, cx, cy);
-  }
-  else if (op.type === "line" || op.type === "arrow") {
-    const [x0,y0] = op.from, [x1,y1] = op.to;
-    ovCtx.beginPath();
-    ovCtx.moveTo(x0,y0);
-    ovCtx.lineTo(x1,y1);
-    ovCtx.stroke();
-    if (op.type === "arrow") drawArrowHead(x0,y0,x1,y1);
-  }
-  else if (op.type === "cloud") {
-    const pts = op.pts;
-    if (pts.length < 2) return;
-    ovCtx.beginPath();
-    ovCtx.moveTo(pts[0][0], pts[0][1]);
-    for (let i=1;i<pts.length;i++) {
-      const [x0,y0] = pts[i-1], [x1,y1] = pts[i];
-      const dx=x1-x0, dy=y1-y0, len=Math.hypot(dx,dy)||1;
-      const nx=-dy/len, ny=dx/len;
-      const mx=(x0+x1)/2, my=(y0+y1)/2;
-      ovCtx.quadraticCurveTo(mx+nx*4, my+ny*4, x1,y1);
-    }
-    ovCtx.closePath();
-    ovCtx.stroke();
-  }
   ovCtx.restore();
 }
-function drawArrowHead(x0,y0,x1,y1) {
-  const dx=x1-x0, dy=y1-y0, len=Math.hypot(dx,dy)||1;
-  const ux=dx/len, uy=dy/len, w=6, h=10;
-  ovCtx.beginPath();
-  ovCtx.moveTo(x1,y1);
-  ovCtx.lineTo(x1-ux*h - uy*w, y1-uy*h + ux*w);
-  ovCtx.lineTo(x1-ux*h + uy*w, y1-uy*h - ux*w);
-  ovCtx.closePath();
-  ovCtx.fill();
-}
 
-// ===== Export to PDF =====
-$("#exportPdf").addEventListener("click", exportFlattened);
+function drawOp(op, isPreview=false) {
+  ovCtx.save();
+  ovCtx.lineWidth = 2 / (state.baseScale * state.viewScale); // keep thickness constant
+  ovCtx.strokeStyle = isPreview ? "#999" : "#111";
+  ovCtx.fillStyle   = "#111";
 
-async function exportFlattened() {
-  if (!state.pdfBytes || !state.pdf) return;
-  const pdfDoc = await PDFLib.PDFDocument.load(state.pdfBytes);
-  const rgb = PDFLib.rgb;
-  const helv = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
-
-  const pagesWithOps = Object.keys(state.overlayOps).map(n=>parseInt(n,10));
-  for (const pNum of pagesWithOps) {
-    const page = pdfDoc.getPage(pNum-1);
-    const ops = state.overlayOps[pNum] || [];
-    for (const op of ops) {
-      if (op.type === "symbol") {
-        const s = 24 * (op.scale || 1);
-        const tx = op.at[0] - s/2, ty = op.at[1] - s/2;
-        const a = Math.cos(rad(op.rot||0)), b = Math.sin(rad(op.rot||0));
-        const transform = [ a, b, -b, a, tx, ty ];
-        page.drawSvgPath(SYMBOLS[op.kind], { borderWidth: 1, color: rgb(0,0,0), transform });
-      }
-      if (op.type === "text") {
-        page.drawText(op.text, { x: op.at[0], y: op.at[1], size: 12, font: helv, color: rgb(0,0,0) });
-      }
-      if (op.type === "line" || op.type === "arrow") {
-        page.drawLine({ start: {x:op.from[0]/state.scale, y:viewport.height - op.from[1]/state.scale},
-                        end:   {x:op.to[0]/state.scale,   y:viewport.height - op.to[1]/state.scale},
-                        thickness: 1.2, color: rgb(0,0,0) });
-        if (op.type === "arrow") {
-          const start = {x:op.from[0]/state.scale, y:viewport.height - op.from[1]/state.scale};
-          const end   = {x:op.to[0]/state.scale,   y:viewport.height - op.to[1]/state.scale};
-          drawArrowHeadPdf(page, start, end);
-        }
-      }
-      if (op.type === "cloud") {
-        const pts = op.pts.map(([cx,cy]) => ({x:cx/state.scale, y:viewport.height - cy/state.scale}));
-        let d = `M ${pts[0].x} ${pts[0].y}`;
-        for (let i=1;i<pts.length;i++) {
-          const x0=pts[i-1].x, y0=pts[i-1].y, x1=pts[i].x, y1=pts[i].y;
-          const dx=x1-x0, dy=y1-y0, len=Math.hypot(dx,dy)||1;
-          const nx=-dy/len, ny=dx/len;
-          const mx=(x0+x1)/2, my=(y0+y1)/2;
-          d += ` Q ${mx + nx*4} ${my + ny*4}, ${x1} ${y1}`;
-        }
-        d += " Z";
-        page.drawSvgPath(d, { borderWidth: 1.2, color: rgb(0,0,0) });
-      }
+  if (op.type==="symbol") {
+    const [px, py] = op.at; // already in PDF coords
+    ovCtx.beginPath(); 
+    ovCtx.arc(px, viewport.height - py, 3, 0, Math.PI*2); 
+    ovCtx.fill();
+    ovCtx.font = `${12/(state.baseScale*state.viewScale)}px system-ui`;
+    ovCtx.textAlign = "center";
+    ovCtx.fillText(
+      op.kind.toUpperCase(), 
+      px, 
+      viewport.height - py + 12/(state.baseScale*state.viewScale)
+    );
+  }
+  else if (op.type==="arrow"||op.type==="line") {
+    const [x0,y0] = op.from;
+    const [x1,y1] = op.to;
+    ovCtx.beginPath(); 
+    ovCtx.moveTo(x0, viewport.height-y0); 
+    ovCtx.lineTo(x1, viewport.height-y1); 
+    ovCtx.stroke();
+    if (op.type==="arrow") drawArrowHead(x0, viewport.height-y0, x1, viewport.height-y1);
+  }
+  else if (op.type==="cloud") {
+    const pts=op.pts; 
+    if (pts.length<2){ovCtx.restore();return;}
+    ovCtx.beginPath();
+    ovCtx.moveTo(pts[0][0], viewport.height-pts[0][1]);
+    for(let i=1;i<pts.length;i++){
+      const [px0,py0] = pts[i-1];
+      const [px,py]   = pts[i];
+      const dx=px-px0, dy=py-py0, len=Math.hypot(dx,dy)||1;
+      const nx=-dy/len, ny=dx/len, amp=4;
+      const mx=(px0+px)/2, my=(py0+py)/2;
+      ovCtx.quadraticCurveTo(mx+nx*amp, viewport.height-(my+ny*amp), px, viewport.height-py);
     }
+    ovCtx.closePath(); 
+    ovCtx.stroke();
   }
 
-  const bytes = await pdfDoc.save();
-  downloadBlob(new Blob([bytes], { type: "application/pdf" }), "FA-annotated.pdf");
+  ovCtx.restore();
 }
 
-function rad(d) { return (d||0) * Math.PI/180; }
-function drawArrowHeadPdf(page, start, end) {
-  const dx=end.x-start.x, dy=end.y-start.y, len=Math.hypot(dx,dy)||1;
-  const ux=dx/len, uy=dy/len, w=4, h=8;
-  const a = [ end.x, end.y ];
-  const b = [ end.x-ux*h - uy*w, end.y-uy*h + ux*w ];
-  const c = [ end.x-ux*h + uy*w, end.y-uy*h - ux*w ];
-  page.drawPolygon([a,b,c], { color: PDFLib.rgb(0,0,0), borderWidth: 0 });
+
+
+/* -------------------- Flatten export -------------------- */
+async function exportFlattened(){
+  alert("Export still TODO with zoom/pan support!");
 }
 
-function downloadBlob(blob, filename) {
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url; a.download = filename; a.click();
-  URL.revokeObjectURL(url);
-}
-
-// Default tool
-$$(".tool")[1].click(); // Default to SD
+/* -------------------- Kickoff -------------------- */
+(() => { selectTool("sd"); })();
