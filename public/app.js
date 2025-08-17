@@ -33,25 +33,21 @@ let pageImage = null;
 const cam = { zoom: 1, offsetX: 0, offsetY: 0 };
 let state = { tool: null, ops: {}, drawing: null, symbolScale: 2, selectedId: null };
 
-/*const SYMBOLS = {
-  pull2: "M3 5h18v14H3z M6 8h12v2H6z M10 11h4v5h-4z",
-  sd2: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M7 12h10 M8 9.5h8 M8 14.5h8",
-  hd2: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M12 6v12 M6 12h12 M8.2 8.2l7.6 7.6 M15.8 8.2l-7.6 7.6",
-  av: "M4 4h16v16H4z M8 8h8v8H8z"
-};*/
+
 const SYMBOLS = {
-  pull: "M3 18h18V4H3v14z M6 8h12v8H6V8z",
-  sd: "M12 3a9 9 0 1 0 0 18 9 9 0 1 0 0-18z",
-  hd: "M12 3a9 9 0 1 0 0 18M12 6v12M6 12h12",
+  pull: "M4 4 H20 V20 H4 Z M8 8 V16 M8 8 H16 M8 12 H14",
+  sd: "M7 2 H17 L22 12 L17 22 H7 L2 12 Z M15 8 C15 6, 9 6, 9 8 C9 9, 15 9, 15 11 C15 13, 9 13, 9 15 C9 17, 15 17, 15 15",
+  hd: "M7 2 H17 L22 12 L17 22 H7 L2 12 Z M12 6 V12 M9 14 A3 3 0 1 0 15 14 A3 3 0 1 0 9 14 Z",
+  dd: "M7 4 H17 L22 12 L17 20 H7 L2 12 Z M9 0 V4 M15 0 V4 M15 9 C15 7, 9 7, 9 9 C9 10, 15 10, 15 12 C15 14, 9 14, 9 16 C9 18, 15 18, 15 16",
 
   // New ones (simplified for now)
-  av: "M4 4h16v16H4z M8 8h8v8H8z",
-  vo: "M12 3l9 6v6l-9 6-9-6V9z",
-  aim: "M6 12l6-9 6 9-6 9-6-9z",
+  av: "M4 6 H20 V22 H4 Z M4 6 L20 22 M20 6 L4 22 M12 10 A4 4 0 1 0 12 18 A4 4 0 1 0 12 10 Z M8 2 L16 2 L12 6 Z",
+  vo: "M12 8 A4 4 0 1 0 12 16 A4 4 0 1 0 12 8 Z M4 4 L9 9 M20 4 L15 9 M4 20 L9 15 M20 20 L15 15",
+  aim: "M7 2 H17 L22 12 L17 22 H7 L2 12 Z M10 18 L12 6 L14 18 M9 14 H15",
   aio2: "M6 12l6-9 6 9-6 9-6-9z M10 14h4",
   p: "M6 6h12v12H6z",
-  vs: "M4 12h16M12 4v16",
-  wf: "M2 12h20M12 2v20",
+  vs: "M4 4 H20 V20 H4 Z M6 8 L12 20 L18 8",
+  wf: "M4 4 H20 V20 H4 Z M6 8 L8 20 L10 12 L12 20 L14 8",
   ps: "M4 4h16v16H4z"
 };
 
@@ -138,7 +134,7 @@ document.getElementById("loadProject").addEventListener("click", () => {
     projectName = data.projectName || "FA-Markup";
     Object.assign(cam, data.cam || {});
     state.ops = data.ops || {};
-    state.symbolScale = data.symbolScale || 2;
+    state.symbolScale = data.symbolScale || 4;
     currentPage = data.currentPage || 1;
 
     if (data.pdf) {
@@ -254,6 +250,7 @@ function drawOp(op, preview = false) {
     ovCtx.beginPath();
     ovCtx.moveTo(op.x1, op.y1);
     ovCtx.lineTo(op.x2, op.y2);
+    ovCtx.lineWidth = 3;
     ovCtx.stroke();
     if (op.type === "arrow") drawArrowHead(op.x1, op.y1, op.x2, op.y2);
   }
