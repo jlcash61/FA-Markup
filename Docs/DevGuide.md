@@ -231,3 +231,34 @@ Cloud sync (optional).
 
 ⚡ Question for you:  
 Do you want me to **combine dev-doc + README into one long Markdown doc**, or keep them **separate** (README for GitHub, full docs for internal reference)?
+
+
+📦 Deployment
+
+Supports static hosting (GitHub Pages, Firebase Hosting, Cloudflare Pages).
+Make sure to serve with HTTPS for full PWA install support.
+
+🔮 Roadmap
+
+Symbol library expansion (AV, VO, custom).
+
+User preferences (line thickness, text font/size).
+
+Toolbar grouping & dropdown menus.
+
+Export with editable metadata.
+
+Keyboard shortcuts.
+
+Easter eggs / branding (BorgworX ✨).
+
+🏷️ License
+
+MIT (Free to use & modify)
+
+
+---
+
+Next step → I’ll write the **Developer Docs** with a full program flow & function reference (based on `app.js`).
+
+👉 Do you want that doc dropped in the repo as `/docs/DeveloperGuide.md` so you can keep it versioned?

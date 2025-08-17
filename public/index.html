@@ -1,14 +1,32 @@
+<!--
+======================================================
+  FA Markup Tool
+  Developer: BorgworX
+  Version: 1.0.0
+  Description: 
+    A lightweight, browser-based Fire Alarm markup 
+    tool for redlining PDFs with symbols, text, and 
+    drawing tools. Supports saving/loading projects 
+    and exporting to annotated PDF.
+  Repository: https://github.com/jlcash61/fa-markup
+  Last Updated: 2025-08-17
+======================================================
+-->
+
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <title>FA Markup Tool</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#333333">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <title>FA Markup Tool</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="favicon.ico" type="image/x-icon">
+  <meta name="theme-color" content="#333333">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 
 </head>
@@ -41,7 +59,7 @@
       <button class="tool" data-tool="pull">Pull</button>
       <button class="tool" data-tool="sd">Smoke</button>
       <button class="tool" data-tool="hd">Heat</button>
-        <button class="tool" data-tool="av">AV</button>
+      <button class="tool" data-tool="av">AV</button>
       <button class="tool" data-tool="text">Text</button>
 
       <!-- Drawing tools -->
@@ -71,9 +89,9 @@
 
 
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
-    <script type="module" src="app.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+  <script type="module" src="app.js"></script>
 </body>
 
 </html>

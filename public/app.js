@@ -1,3 +1,22 @@
+/*
+======================================================
+  FA Markup Tool
+  Developer: BorgworX
+  Version: 1.0.0
+  Description:
+    Core JavaScript logic for FA Markup Tool.
+    Handles:
+      - PDF rendering (via PDF.js)
+      - Overlay drawing (symbols, text, lines, arrows, clouds)
+      - Edit mode (move, delete, resize)
+      - Project persistence (save/load JSON state)
+      - PDF export (via PDF-Lib)
+  Repository: https://github.com/jlcash61/fa-markup
+  Last Updated: 2025-08-17
+======================================================
+*/
+
+
 // === Setup ===
 const fileInput = document.getElementById("fileInput");
 const pdfCanvas = document.getElementById("pdfCanvas");
@@ -14,11 +33,26 @@ let pageImage = null;
 const cam = { zoom: 1, offsetX: 0, offsetY: 0 };
 let state = { tool: null, ops: {}, drawing: null, symbolScale: 2, selectedId: null };
 
-const SYMBOLS = {
-  pull: "M3 5h18v14H3z M6 8h12v2H6z M10 11h4v5h-4z",
-  sd: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M7 12h10 M8 9.5h8 M8 14.5h8",
-  hd: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M12 6v12 M6 12h12 M8.2 8.2l7.6 7.6 M15.8 8.2l-7.6 7.6",
+/*const SYMBOLS = {
+  pull2: "M3 5h18v14H3z M6 8h12v2H6z M10 11h4v5h-4z",
+  sd2: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M7 12h10 M8 9.5h8 M8 14.5h8",
+  hd2: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M12 6v12 M6 12h12 M8.2 8.2l7.6 7.6 M15.8 8.2l-7.6 7.6",
   av: "M4 4h16v16H4z M8 8h8v8H8z"
+};*/
+const SYMBOLS = {
+  pull: "M3 18h18V4H3v14z M6 8h12v8H6V8z",
+  sd: "M12 3a9 9 0 1 0 0 18 9 9 0 1 0 0-18z",
+  hd: "M12 3a9 9 0 1 0 0 18M12 6v12M6 12h12",
+
+  // New ones (simplified for now)
+  av: "M4 4h16v16H4z M8 8h8v8H8z",
+  vo: "M12 3l9 6v6l-9 6-9-6V9z",
+  aim: "M6 12l6-9 6 9-6 9-6-9z",
+  aio2: "M6 12l6-9 6 9-6 9-6-9z M10 14h4",
+  p: "M6 6h12v12H6z",
+  vs: "M4 12h16M12 4v16",
+  wf: "M2 12h20M12 2v20",
+  ps: "M4 4h16v16H4z"
 };
 
 // === Helpers ===
