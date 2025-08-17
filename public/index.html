@@ -51,8 +51,22 @@
     <!-- Undo / Clear still make sense here -->
     <button id="undo">Undo</button>
     <button id="clearPage">Clear Page</button>
+    <div class="dropdown">
+      <button id="aboutBtn">About ▾</button>
+      <div class="dropdown-content">
+        <a href="#" id="userGuideLink">User Guide</a>
+        <a href="#" id="aboutLink">About</a>
+      </div>
+    </div>
   </header>
 
+  <!-- Modal (hidden by default) -->
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <span id="modalClose" class="close">&times;</span>
+      <div id="modalBody"></div>
+    </div>
+  </div>
   <div id="mainLayout">
     <aside id="sidebar">
       <!-- Symbol tools -->
@@ -65,7 +79,7 @@
       <button class="tool" data-tool="aim">AIM</button>
       <button class="tool" data-tool="aio2">AIO2</button>
       <button class="tool" data-tool="p">Box</button>
-      
+
 
       <button class="tool" data-tool="av">AV</button>
       <button class="tool" data-tool="vo">VO</button>
@@ -84,15 +98,15 @@
         <input type="range" id="symSize" min="1" max="4" step="1" value="4">
       </label>
       <div id="sidebar-branding">
-    <div class="brand-main">
-      <img src="borgworx.png" alt="BorgworX Logo" class="brand-logo">
-      <span class="brand-text">BorgworX</span>
-    </div>
-    <div class="brand-powered">
-      <span>Powered by TiBorg</span>
-      <img src="ornyx.png" alt="Kairos Ornyz" class="ornyz-icon">
-    </div>
-  </div>
+        <div class="brand-main">
+          <img src="borgworx.png" alt="BorgworX Logo" class="brand-logo">
+          <span class="brand-text">BorgworX</span>
+        </div>
+        <div class="brand-powered">
+          <span>Powered by TiBorg</span>
+          <img src="ornyx.png" alt="Kairos Ornyz" class="ornyz-icon">
+        </div>
+      </div>
     </aside>
 
     <div id="canvasWrap">

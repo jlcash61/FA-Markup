@@ -556,8 +556,44 @@ function drawOpToCtx(ctx, op) {
 
   ctx.restore();
 }
+
+// About / Guide Modal
+const modal = document.getElementById("modal");
+const modalBody = document.getElementById("modalBody");
+const modalClose = document.getElementById("modalClose");
+
+document.getElementById("userGuideLink").addEventListener("click", () => {
+  modalBody.innerHTML = `
+    <h2>User Guide</h2>
+    <p><strong>Open PDF:</strong> Use the "Choose File" button to import a PDF.</p>
+    <p><strong>Navigation:</strong> Prev/Next to flip pages. Zoom & pan with buttons or drag.</p>
+    <p><strong>Markups:</strong> Select a tool (Pull, Smoke, Heat, Line, Arrow, Cloud, Text). Click to place or draw. Click again to deselect tool.</p>
+    <p><strong>Edit:</strong> Double-click text to change. Select and Delete removes items. Undo/clear to fix mistakes.</p>
+    <p><strong>Projects:</strong> Save or load project files (.famarkup) to continue later.</p>
+    <p><strong>Export:</strong> Export PDF with all markup applied.</p>
+  `;
+  modal.style.display = "block";
+});
+
+document.getElementById("aboutLink").addEventListener("click", () => {
+  modalBody.innerHTML = `
+    <h2>About FA Markup Tool</h2>
+    <p><strong>Version:</strong> 1.0.0</p>
+    <p><strong>Developer:</strong> BorgworX</p>
+    <p>A lightweight, offline-capable tool for marking up PDFs with fire alarm symbols and annotations.</p>
+    <p>PWA enabled — installable and usable offline.</p>
+  `;
+  modal.style.display = "block";
+});
+
+modalClose.onclick = () => modal.style.display = "none";
+window.onclick = e => { if (e.target === modal) modal.style.display = "none"; };
+
+
+
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("service-worker.js")
     .then(() => console.log("Service Worker registered"))
     .catch(err => console.error("SW registration failed:", err));
 }
+
