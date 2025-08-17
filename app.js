@@ -17,7 +17,8 @@ let state = { tool: null, ops: {}, drawing: null, symbolScale: 2, selectedId: nu
 const SYMBOLS = {
   pull: "M3 5h18v14H3z M6 8h12v2H6z M10 11h4v5h-4z",
   sd: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M7 12h10 M8 9.5h8 M8 14.5h8",
-  hd: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M12 6v12 M6 12h12 M8.2 8.2l7.6 7.6 M15.8 8.2l-7.6 7.6"
+  hd: "M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18z M12 6v12 M6 12h12 M8.2 8.2l7.6 7.6 M15.8 8.2l-7.6 7.6",
+  av: "M4 4h16v16H4z M8 8h8v8H8z"
 };
 
 // === Helpers ===

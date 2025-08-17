@@ -14,58 +14,62 @@
 </head>
 
 <body>
-    <header>
-        <input type="file" id="fileInput">
+  <header id="topbar">
+    <input type="file" id="fileInput">
 
-        <button id="prevPage">Prev</button>
-        <span id="pageInfo"></span>
-        <button id="nextPage">Next</button>
+    <button id="prevPage">Prev</button>
+    <span id="pageInfo"></span>
+    <button id="nextPage">Next</button>
 
-        <button id="zoomIn">Zoom In</button>
-        <button id="zoomOut">Zoom Out</button>
-        <button id="resetView">Reset</button>
+    <button id="zoomIn">Zoom In</button>
+    <button id="zoomOut">Zoom Out</button>
+    <button id="resetView">Reset</button>
 
-        <!-- Symbol tools -->
-        <button class="tool" data-tool="pull">Pull</button>
-        <button class="tool" data-tool="sd">Smoke</button>
-        <button class="tool" data-tool="hd">Heat</button>
-        <button class="tool" data-tool="text">Text</button>
+    <!-- Project management -->
+    <button id="saveProject">Save Project</button>
+    <button id="loadProject">Load Project</button>
+    <button id="exportPdf">Export PDF</button>
 
-        <!-- New drawing tools -->
-        <button class="tool" data-tool="line">Line</button>
-        <button class="tool" data-tool="arrow">Arrow</button>
-        <button class="tool" data-tool="cloud">Cloud</button>
-        <button id="delete">Delete</button>
+    <!-- Undo / Clear still make sense here -->
+    <button id="undo">Undo</button>
+    <button id="clearPage">Clear Page</button>
+  </header>
 
-        <!-- Symbol size control -->
-        <label>Size
-            <input type="range" id="symSize" min="0.5" max="3" step="0.1" value="2">
-        </label>
+  <div id="mainLayout">
+    <aside id="sidebar">
+      <!-- Symbol tools -->
+      <button class="tool" data-tool="pull">Pull</button>
+      <button class="tool" data-tool="sd">Smoke</button>
+      <button class="tool" data-tool="hd">Heat</button>
+        <button class="tool" data-tool="av">AV</button>
+      <button class="tool" data-tool="text">Text</button>
 
-        <button id="undo">Undo</button>
-        <button id="clearPage">Clear Page</button>
+      <!-- Drawing tools -->
+      <button class="tool" data-tool="line">Line</button>
+      <button class="tool" data-tool="arrow">Arrow</button>
+      <button class="tool" data-tool="cloud">Cloud</button>
 
-        <!-- Project management -->
-        <button id="saveProject">Save Project</button>
-        <button id="loadProject">Load Project</button>
+      <!-- Delete -->
+      <button id="delete">Delete</button>
 
-        <!-- Export -->
-        <button id="exportPdf">Export PDF</button>
-    </header>
-
-
-    <div id="status">
-        <div class="spinner"></div>
-        <span id="statusText"></span>
-    </div>
-
-
-
+      <!-- Size control -->
+      <label>Size
+        <input type="range" id="symSize" min="0.5" max="3" step="0.1" value="2">
+      </label>
+    </aside>
 
     <div id="canvasWrap">
-        <canvas id="pdfCanvas"></canvas>
-        <canvas id="overlay"></canvas>
+      <canvas id="pdfCanvas"></canvas>
+      <canvas id="overlay"></canvas>
     </div>
+  </div>
+
+  <div id="status">
+    <div class="spinner"></div>
+    <span id="statusText"></span>
+  </div>
+
+
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>

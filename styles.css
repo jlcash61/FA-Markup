@@ -1,68 +1,92 @@
 body {
-            margin: 0;
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
+  margin: 0;
+  font-family: sans-serif;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
-        header {
-            background: #333;
-            color: #fff;
-            padding: 8px;
-            display: flex;
-            gap: 8px;
-        }
+#topbar {
+  background: #333;
+  color: #fff;
+  padding: 8px;
+  display: flex;
+  gap: 8px;
+}
 
-        #canvasWrap {
-            flex: 1;
-            position: relative;
-            background: #666;
-            overflow: hidden;
-        }
+#mainLayout {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
 
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
+#sidebar {
+  background: #444;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px;
+  min-width: 60px;
+  align-items: center;
+}
 
-        button.active {
-            background: #0a0;
-        }
+header {
+    background: #333;
+    color: #fff;
+    padding: 8px;
+    display: flex;
+    gap: 8px;
+}
 
-        #status {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(255, 255, 255, 0.95);
-            padding: 1em 2em;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            font-size: 1.1em;
-            display: none;
-            z-index: 1000;
-            display: none;
-            align-items: center;
-            gap: 12px;
-        }
+#canvasWrap {
+    flex: 1;
+    position: relative;
+    background: #666;
+    overflow: hidden;
+}
 
-        .spinner {
-            width: 20px;
-            height: 20px;
-            border: 3px solid #ccc;
-            border-top: 3px solid #333;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
+canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
 
-        @keyframes spin {
-            from {
-                transform: rotate(0deg);
-            }
+button.active {
+    background: #0a0;
+}
 
-            to {
-                transform: rotate(360deg);
-            }
-        }
+#status {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 1em 2em;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    font-size: 1.1em;
+    display: none;
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    gap: 12px;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid #ccc;
+    border-top: 3px solid #333;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
