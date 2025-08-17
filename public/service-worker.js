@@ -4,7 +4,7 @@
 // It uses a cache-first strategy for assets and falls back to the network when necessary.
 
 // 🔄 Increment this version when you update files
-const APP_VERSION = "v1.0.0";  
+const APP_VERSION = "v1.0.1";  
 const CACHE_NAME = `fa-markup-cache-${APP_VERSION}`;
 
 const ASSETS = [

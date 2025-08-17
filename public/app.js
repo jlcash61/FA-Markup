@@ -2,7 +2,7 @@
 ======================================================
   FA Markup Tool
   Developer: BorgworX
-  Version: 1.0.0
+  Version: 1.0.1
   Description:
     Core JavaScript logic for FA Markup Tool.
     Handles:
