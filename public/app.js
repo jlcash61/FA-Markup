@@ -2,7 +2,7 @@
 ======================================================
   FA Markup Tool
   Developer: BorgworX
-  Version: 1.0.1
+  Version: 1.1.0
   Description:
     Core JavaScript logic for FA Markup Tool.
     Handles:
@@ -312,10 +312,37 @@ document.querySelectorAll(".tool").forEach(btn => {
 let dragging = false, lastX = 0, lastY = 0;
 let movingOp = null;
 
-overlay.addEventListener("mousedown", e => {
+function getPointerPos(evt) {
   const rect = overlay.getBoundingClientRect();
-  const x = (e.clientX - rect.left - cam.offsetX) / cam.zoom;
-  const y = (e.clientY - rect.top - cam.offsetY) / cam.zoom;
+  let clientX, clientY;
+
+  if (evt.touches && evt.touches.length > 0) {
+    clientX = evt.touches[0].clientX;
+    clientY = evt.touches[0].clientY;
+  } else {
+    clientX = evt.clientX;
+    clientY = evt.clientY;
+  }
+
+  return {
+    x: (clientX - rect.left - cam.offsetX) / cam.zoom,
+    y: (clientY - rect.top - cam.offsetY) / cam.zoom,
+    rawX: clientX,
+    rawY: clientY
+  };
+}
+
+
+overlay.addEventListener("mousedown", startAction);
+
+
+overlay.addEventListener("touchstart", e => {
+  e.preventDefault(); // prevent default touch behavior
+  startAction(e);
+}, { passive: false });
+
+function startAction(evt) {
+  let { x, y, rawX, rawY } = getPointerPos(evt);
   const ops = state.ops[currentPage] || [];
 
   if (!state.tool) {
@@ -362,16 +389,23 @@ overlay.addEventListener("mousedown", e => {
     state.ops[currentPage].push({ id: makeId(), type: "symbol", kind: state.tool, x, y, scale: state.symbolScale });
     redraw();
   }
-});
+}
 
-overlay.addEventListener("mousemove", e => {
-  const rect = overlay.getBoundingClientRect();
-  const x = (e.clientX - rect.left - cam.offsetX) / cam.zoom;
-  const y = (e.clientY - rect.top - cam.offsetY) / cam.zoom;
+
+overlay.addEventListener("mousemove", moveAction);
+
+overlay.addEventListener("touchmove", e => {
+  e.preventDefault(); // prevent scroll/zoom default
+  moveAction(e);
+}, { passive: false });
+
+function moveAction(evt) {
+  let { x, y, rawX, rawY } = getPointerPos(evt);
 
   if (movingOp) {
     const dx = x - lastX, dy = y - lastY;
-    movingOp.x += dx; movingOp.y += dy;
+    movingOp.x += dx;
+    movingOp.y += dy;
     lastX = x; lastY = y;
     redraw();
     return;
@@ -379,20 +413,29 @@ overlay.addEventListener("mousemove", e => {
 
   if (state.drawing) {
     if (state.drawing.type === "line" || state.drawing.type === "arrow") {
-      state.drawing.x2 = x; state.drawing.y2 = y;
+      state.drawing.x2 = x;
+      state.drawing.y2 = y;
     } else if (state.drawing.type === "cloud") {
       state.drawing.pts.push([x, y]);
     }
     redraw();
   } else if (dragging) {
-    cam.offsetX += e.clientX - lastX;
-    cam.offsetY += e.clientY - lastY;
-    lastX = e.clientX; lastY = e.clientY;
+    cam.offsetX += rawX - lastX;
+    cam.offsetY += rawY - lastY;
+    lastX = rawX; lastY = rawY;
     redraw();
   }
-});
+}
 
-overlay.addEventListener("mouseup", () => {
+
+overlay.addEventListener("mouseup", endAction);
+
+overlay.addEventListener("touchend", e => {
+  e.preventDefault(); // prevent weird double-tap zooms
+  endAction(e);
+}, { passive: false });
+
+function endAction(evt) {
   if (state.drawing) {
     if (!state.ops[currentPage]) state.ops[currentPage] = [];
     state.ops[currentPage].push(state.drawing);
@@ -401,7 +444,8 @@ overlay.addEventListener("mouseup", () => {
   dragging = false;
   movingOp = null;
   redraw();
-});
+}
+
 
 overlay.addEventListener("mouseleave", () => {
   dragging = false;
@@ -578,7 +622,7 @@ document.getElementById("userGuideLink").addEventListener("click", () => {
 document.getElementById("aboutLink").addEventListener("click", () => {
   modalBody.innerHTML = `
     <h2>About FA Markup Tool</h2>
-    <p><strong>Version:</strong> 1.0.0</p>
+    <p><strong>Version:</strong> 1.1.0</p>
     <p><strong>Developer:</strong> BorgworX</p>
     <p>A lightweight, offline-capable tool for marking up PDFs with fire alarm symbols and annotations.</p>
     <p>PWA enabled — installable and usable offline.</p>
