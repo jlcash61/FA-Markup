@@ -2,7 +2,7 @@
 ======================================================
   FA Markup Tool
   Developer: BorgworX
-  Version: 1.1.0
+  Version: 1.1.1
   Description:
     Core JavaScript logic for FA Markup Tool.
     Handles:
@@ -367,7 +367,7 @@ function startAction(evt) {
       state.selectedId = null;
       movingOp = null;
       dragging = true;
-      lastX = e.clientX; lastY = e.clientY;
+      lastX = rawX; lastY = rawY;
       redraw();
       return;
     }
@@ -406,7 +406,8 @@ function moveAction(evt) {
     const dx = x - lastX, dy = y - lastY;
     movingOp.x += dx;
     movingOp.y += dy;
-    lastX = x; lastY = y;
+    lastX = x; 
+    lastY = y;
     redraw();
     return;
   }
@@ -420,12 +421,15 @@ function moveAction(evt) {
     }
     redraw();
   } else if (dragging) {
+    // ✅ use raw screen coords for deltas when panning
     cam.offsetX += rawX - lastX;
     cam.offsetY += rawY - lastY;
-    lastX = rawX; lastY = rawY;
+    lastX = rawX;
+    lastY = rawY;
     redraw();
   }
 }
+
 
 
 overlay.addEventListener("mouseup", endAction);
@@ -622,7 +626,7 @@ document.getElementById("userGuideLink").addEventListener("click", () => {
 document.getElementById("aboutLink").addEventListener("click", () => {
   modalBody.innerHTML = `
     <h2>About FA Markup Tool</h2>
-    <p><strong>Version:</strong> 1.1.0</p>
+    <p><strong>Version:</strong> 1.1.1</p>
     <p><strong>Developer:</strong> BorgworX</p>
     <p>A lightweight, offline-capable tool for marking up PDFs with fire alarm symbols and annotations.</p>
     <p>PWA enabled — installable and usable offline.</p>
